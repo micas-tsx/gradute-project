@@ -7,6 +7,7 @@
  *   da senha, em texto puro. Use apenas para demonstração/estudo; não use
  *   em produção (o login aceita qualquer senha com o mesmo prefixo).
  * - Lista de usuários em server/data/users.json.
+ * - O login cria a conta automaticamente se ela ainda não existir.
  * - Sessão via cookie HttpOnly assinado com HMAC-SHA256.
  *
  * Variáveis de ambiente:
@@ -284,18 +285,18 @@ setInterval(() => {
 /* Validação                                                          */
 /* ------------------------------------------------------------------ */
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const IDENTIFIER_MAX_LEN = 254;
 
-function normalizeEmail(value) {
+function normalizeIdentifier(value) {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
 }
 
 function validateCredentials(body) {
-  const email = normalizeEmail(body?.email);
+  const email = normalizeIdentifier(body?.email);
   const password = typeof body?.password === 'string' ? body.password : '';
 
-  if (!EMAIL_RE.test(email) || email.length > 254) {
-    return { error: 'Informe um e-mail válido.' };
+  if (!email || email.length > IDENTIFIER_MAX_LEN) {
+    return { error: 'Informe um usuário, e-mail ou telefone.' };
   }
   if (!password) {
     return { error: 'Informe sua senha.' };
@@ -318,22 +319,35 @@ function publicUser(user) {
 /* Rotas                                                              */
 /* ------------------------------------------------------------------ */
 
-async function handleRegister(req, res) {
-  if (tooManyAttempts(`register:${clientIp(req)}`, 10, 10 * 60 * 1000)) {
-    return fail(req, res, 429, 'Muitas tentativas. Tente novamente mais tarde.');
+async function handleLogin(req, res) {
+  if (tooManyAttempts(`login:${clientIp(req)}`, 20, 5 * 60 * 1000)) {
+    return fail(req, res, 429, 'Muitas tentativas. Aguarde alguns minutos.');
   }
 
   const body = await readJson(req);
   const data = validateCredentials(body);
   if (data.error) return fail(req, res, 400, data.error);
-  if (data.password.length < 8) {
-    return fail(req, res, 400, 'A senha precisa ter pelo menos 8 caracteres.');
-  }
 
+  // O login também cria a conta (não existe mais cadastro separado).
+  // Para conta existente, compara a senha; usuários inseridos à mão no
+  // users.json sem "id" ganham um id aleatório no primeiro login.
   const result = await withStore(async (users) => {
-    if (users.some((u) => u.email === data.email)) {
-      return { changed: false, value: { conflict: true } };
+    const found = users.find((u) => u.email === data.email) || null;
+
+    if (found) {
+      const valid =
+        typeof found.password === 'string' &&
+        passwordMatches(passwordPrefix(found.password), passwordPrefix(data.password));
+      if (!valid) return { changed: false, value: { invalid: true } };
+
+      let changed = false;
+      if (!found.id) {
+        found.id = randomUUID();
+        changed = true;
+      }
+      return { changed, value: { user: found } };
     }
+
     const user = {
       id: randomUUID(),
       email: data.email,
@@ -344,61 +358,19 @@ async function handleRegister(req, res) {
     return { changed: true, value: { user } };
   });
 
-  if (result.conflict) {
-    return fail(req, res, 409, 'Já existe uma conta com esse e-mail.');
+  if (result.invalid) {
+    return fail(req, res, 401, 'Usuário ou senha inválidos.');
   }
 
   const token = signSession({
     sub: result.user.id,
     exp: Date.now() + SESSION_TTL_MS,
   });
-
-  return send(
-    req,
-    res,
-    201,
-    { ok: true, user: publicUser(result.user) },
-    { 'Set-Cookie': sessionCookie(token, req) }
-  );
-}
-
-async function handleLogin(req, res) {
-  if (tooManyAttempts(`login:${clientIp(req)}`, 20, 5 * 60 * 1000)) {
-    return fail(req, res, 429, 'Muitas tentativas. Aguarde alguns minutos.');
-  }
-
-  const body = await readJson(req);
-  const data = validateCredentials(body);
-  if (data.error) return fail(req, res, 400, data.error);
-
-  // Compara a senha em texto puro. Usuários inseridos à mão no users.json
-  // sem "id" ganham um id aleatório no primeiro login.
-  const user = await withStore(async (users) => {
-    const found = users.find((u) => u.email === data.email) || null;
-    if (!found || typeof found.password !== 'string') {
-      return { changed: false, value: null };
-    }
-    if (!passwordMatches(passwordPrefix(found.password), passwordPrefix(data.password))) {
-      return { changed: false, value: null };
-    }
-    let changed = false;
-    if (!found.id) {
-      found.id = randomUUID();
-      changed = true;
-    }
-    return { changed, value: found };
-  });
-
-  if (!user) {
-    return fail(req, res, 401, 'E-mail ou senha inválidos.');
-  }
-
-  const token = signSession({ sub: user.id, exp: Date.now() + SESSION_TTL_MS });
   return send(
     req,
     res,
     200,
-    { ok: true, user: publicUser(user) },
+    { ok: true, user: publicUser(result.user) },
     { 'Set-Cookie': sessionCookie(token, req) }
   );
 }
@@ -496,7 +468,6 @@ const server = createServer(async (req, res) => {
     }
 
     if (pathname.startsWith('/api/')) {
-      if (req.method === 'POST' && pathname === '/api/register') return await handleRegister(req, res);
       if (req.method === 'POST' && pathname === '/api/login') return await handleLogin(req, res);
       if (req.method === 'POST' && pathname === '/api/logout') return await handleLogout(req, res);
       if (req.method === 'GET' && pathname === '/api/me') return await handleMe(req, res);

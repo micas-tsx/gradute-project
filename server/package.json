@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "API de login do projeto: lista de usuários em JSON guardando só os 3 primeiros caracteres da senha (didático).",
+  "description": "API de login do projeto: login cria a conta automaticamente e guarda só os 3 primeiros caracteres da senha (didático).",
   "engines": {
     "node": ">=18"
   },
