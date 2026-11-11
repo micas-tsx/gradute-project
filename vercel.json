@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://dish-shown-attributes-trivia.trycloudflare.com/api/:path*"
+      "destination": "https://advancement-rays-nightlife-homework.trycloudflare.com/api/:path*"
     }
   ],
   "headers": [
