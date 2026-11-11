@@ -1,0 +1,6 @@
+server/
+deploy/
+.git/
+.gitignore
+*.md
+.vercelignore

@@ -1,0 +1,19 @@
+# Dependências e dados locais
+node_modules/
+server/data/
+deploy/api.env
+deploy/cloudflared.yml
+deploy/logs/
+deploy/*.log
+deploy/*.pid
+*.log
+
+# Segredos
+.env
+.env.*
+
+# Ferramentas
+.vercel/
+.playwright-mcp/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Projeto Faculdade">
+  <rect width="64" height="64" rx="16" fill="#4c5bd4" />
+  <path
+    d="M18 24.5 32 18l14 6.5L32 31 18 24.5Z"
+    fill="#ffffff"
+    opacity="0.95"
+  />
+  <path
+    d="M23 29v11.2c0 .9 4 2.8 9 2.8s9-1.9 9-2.8V29l-9 4.2L23 29Z"
+    fill="#ffffff"
+    opacity="0.8"
+  />
+</svg>

@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="pt-BR" data-api-base="">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Acesso — Projeto Faculdade</title>
+    <meta
+      name="description"
+      content="Página de acesso do Projeto Faculdade. Área de demonstração de login e cadastro."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+
+    <div class="page">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Página inicial do Projeto Faculdade">
+          <span class="brand-mark" aria-hidden="true">PF</span>
+          <span class="brand-name">Projeto Faculdade</span>
+        </a>
+        <span class="chip">Projeto acadêmico</span>
+      </header>
+
+      <main id="conteudo" class="layout">
+        <section class="card" aria-labelledby="titulo-acesso">
+          <div id="authView">
+            <h1 id="titulo-acesso">Entrar na sua conta</h1>
+            <p class="lead">
+              Use o e-mail e a senha cadastrados neste projeto. Não use uma senha
+              que você utiliza em outros sites.
+            </p>
+
+            <div class="tabs" role="tablist" aria-label="Entrar ou criar conta">
+              <button
+                type="button"
+                class="tab is-active"
+                role="tab"
+                id="tab-login"
+                aria-selected="true"
+                aria-controls="panel-login"
+              >
+                Entrar
+              </button>
+              <button
+                type="button"
+                class="tab"
+                role="tab"
+                id="tab-register"
+                aria-selected="false"
+                aria-controls="panel-register"
+                tabindex="-1"
+              >
+                Criar conta
+              </button>
+            </div>
+
+            <!-- Login -->
+            <form
+              id="panel-login"
+              class="panel"
+              role="tabpanel"
+              aria-labelledby="tab-login"
+              novalidate
+            >
+              <div class="field">
+                <label for="login-email">E-mail</label>
+                <input
+                  id="login-email"
+                  name="email"
+                  type="email"
+                  inputmode="email"
+                  autocomplete="username"
+                  spellcheck="false"
+                  maxlength="254"
+                  required
+                />
+              </div>
+
+              <div class="field">
+                <label for="login-password">Senha</label>
+                <div class="input-group">
+                  <input
+                    id="login-password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    minlength="8"
+                    maxlength="200"
+                    required
+                  />
+                  <button
+                    type="button"
+                    class="reveal"
+                    data-reveal="login-password"
+                    aria-label="Mostrar senha"
+                    aria-pressed="false"
+                  >
+                    Mostrar
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" class="btn">Entrar</button>
+            </form>
+
+            <!-- Cadastro -->
+            <form
+              id="panel-register"
+              class="panel"
+              role="tabpanel"
+              aria-labelledby="tab-register"
+              novalidate
+              hidden
+            >
+              <div class="field">
+                <label for="register-email">E-mail</label>
+                <input
+                  id="register-email"
+                  name="email"
+                  type="email"
+                  inputmode="email"
+                  autocomplete="username"
+                  spellcheck="false"
+                  maxlength="254"
+                  required
+                />
+              </div>
+
+              <div class="field">
+                <label for="register-password">Senha</label>
+                <div class="input-group">
+                  <input
+                    id="register-password"
+                    name="password"
+                    type="password"
+                    autocomplete="new-password"
+                    minlength="8"
+                    maxlength="200"
+                    aria-describedby="senha-ajuda"
+                    required
+                  />
+                  <button
+                    type="button"
+                    class="reveal"
+                    data-reveal="register-password"
+                    aria-label="Mostrar senha"
+                    aria-pressed="false"
+                  >
+                    Mostrar
+                  </button>
+                </div>
+                <p class="hint" id="senha-ajuda">Mínimo de 8 caracteres.</p>
+              </div>
+
+              <div class="field">
+                <label for="register-confirm">Confirmar senha</label>
+                <input
+                  id="register-confirm"
+                  name="confirm"
+                  type="password"
+                  autocomplete="new-password"
+                  minlength="8"
+                  maxlength="200"
+                  required
+                />
+              </div>
+
+              <button type="submit" class="btn">Criar conta</button>
+            </form>
+
+            <p id="status" class="status" role="status" aria-live="polite"></p>
+          </div>
+
+          <!-- Área logada -->
+          <div id="accountView" hidden>
+            <h1>Sessão iniciada</h1>
+            <p class="lead">
+              Você entrou com a conta abaixo. Ela fica salva na lista de usuários
+              do servidor deste projeto.
+            </p>
+
+            <dl class="account-info">
+              <div>
+                <dt>E-mail</dt>
+                <dd id="account-email">—</dd>
+              </div>
+              <div>
+                <dt>Cadastro</dt>
+                <dd id="account-created">—</dd>
+              </div>
+            </dl>
+
+            <button type="button" id="logoutBtn" class="btn btn-secondary">
+              Sair da conta
+            </button>
+
+            <p id="status-account" class="status" role="status" aria-live="polite"></p>
+          </div>
+        </section>
+
+        <aside class="info" aria-label="Sobre o projeto">
+          <h2>Como este acesso funciona</h2>
+          <ul>
+            <li>A senha vai para o servidor por HTTPS e é guardada como hash, não como texto.</li>
+            <li>A lista de usuários contém e-mail, data de cadastro e o hash da senha.</li>
+            <li>Nenhum script de terceiros é carregado nesta página.</li>
+          </ul>
+
+          <details>
+            <summary>Tratamento de dados</summary>
+            <p>
+              Este é um projeto acadêmico. Os dados informados são usados apenas
+              para demonstrar o fluxo de cadastro e login e ficam no servidor do
+              próprio projeto. Não há compartilhamento com terceiros. Para remover
+              sua conta, use o contato informado pelo responsável do projeto.
+            </p>
+          </details>
+        </aside>
+      </main>
+
+      <footer class="footer">
+        <p>
+          Projeto acadêmico · Sem vínculo com empresas ou marcas · Não use senhas
+          reais de outros serviços.
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

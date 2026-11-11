@@ -1,0 +1,11 @@
+# Exemplo de configuração do túnel fixo.
+# O deploy/setup-tunnel.sh gera o arquivo real em deploy/cloudflared.yml.
+#
+# Se você já tem um túnel para outros projetos, só acrescente o bloco
+# "hostname: api.seudominio.com" no ingress da sua configuração atual.
+tunnel: SUBSTITUA-PELO-UUID-DO-TUNEL
+credentials-file: /root/.cloudflared/SUBSTITUA-PELO-UUID-DO-TUNEL.json
+ingress:
+  - hostname: api.seudominio.com
+    service: http://127.0.0.1:3000
+  - service: http_status:404

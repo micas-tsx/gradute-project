@@ -1,0 +1,13 @@
+{
+  "name": "projeto-faculdade-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "API de login do projeto: lista de usuários em JSON com senha em hash scrypt.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js"
+  }
+}
