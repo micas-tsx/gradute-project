@@ -3,7 +3,9 @@
  * Servidor de autenticação do projeto (roda no celular via Termux).
  *
  * - Sem dependências externas: só Node.js >= 18.
- * - Senhas NUNCA são gravadas em texto puro: scrypt + salt aleatório.
+ * - ATENÇÃO: do users.json são gravados apenas os 3 primeiros caracteres
+ *   da senha, em texto puro. Use apenas para demonstração/estudo; não use
+ *   em produção (o login aceita qualquer senha com o mesmo prefixo).
  * - Lista de usuários em server/data/users.json.
  * - Sessão via cookie HttpOnly assinado com HMAC-SHA256.
  *
@@ -19,16 +21,12 @@ import { createServer } from 'node:http';
 import {
   randomBytes,
   randomUUID,
-  scrypt as scryptCallback,
   timingSafeEqual,
   createHmac,
 } from 'node:crypto';
 import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { promisify } from 'node:util';
-
-const scrypt = promisify(scryptCallback);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = join(__dirname, '..');
@@ -45,8 +43,6 @@ const SESSION_COOKIE = 'pf_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_BODY_BYTES = 10 * 1024;
 
-const SCRYPT = { N: 16384, r: 8, p: 1, keylen: 64, maxmem: 64 * 1024 * 1024 };
-
 if (!process.env.SESSION_SECRET) {
   console.warn(
     '[aviso] SESSION_SECRET não definido. Usando um segredo temporário:\n' +
@@ -58,40 +54,20 @@ if (!process.env.SESSION_SECRET) {
 /* Senhas                                                             */
 /* ------------------------------------------------------------------ */
 
-async function hashPassword(password) {
-  const salt = randomBytes(16);
-  const hash = await scrypt(password, salt, SCRYPT.keylen, SCRYPT);
-  return [
-    'scrypt',
-    SCRYPT.N,
-    SCRYPT.r,
-    SCRYPT.p,
-    salt.toString('base64url'),
-    hash.toString('base64url'),
-  ].join('$');
+// Senha comparada em texto puro, com tempo constante para não vazar
+// informação pelo tempo de resposta.
+function passwordMatches(stored, provided) {
+  const a = Buffer.from(String(stored));
+  const b = Buffer.from(String(provided));
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
-async function verifyPassword(password, stored) {
-  try {
-    const [alg, N, r, p, saltB64, hashB64] = String(stored).split('$');
-    if (alg !== 'scrypt') return false;
-    const salt = Buffer.from(saltB64, 'base64url');
-    const expected = Buffer.from(hashB64, 'base64url');
-    if (!salt.length || !expected.length) return false;
-    const actual = await scrypt(password, salt, expected.length, {
-      N: Number(N),
-      r: Number(r),
-      p: Number(p),
-      maxmem: SCRYPT.maxmem,
-    });
-    return actual.length === expected.length && timingSafeEqual(actual, expected);
-  } catch {
-    return false;
-  }
-}
+// Só os 3 primeiros caracteres da senha são guardados/comparados.
+const PASSWORD_PREFIX_LEN = 3;
 
-// Hash descartável: garante tempo parecido quando o e-mail não existe.
-const DUMMY_HASH = await hashPassword(randomBytes(24).toString('hex'));
+function passwordPrefix(value) {
+  return String(value).slice(0, PASSWORD_PREFIX_LEN);
+}
 
 /* ------------------------------------------------------------------ */
 /* Persistência (lista simples em JSON)                               */
@@ -102,7 +78,10 @@ let writeQueue = Promise.resolve();
 async function loadUsers() {
   try {
     const raw = await readFile(USERS_FILE, 'utf8');
-    const parsed = JSON.parse(raw);
+    // Tolera BOM (comum em editores do Windows) e arquivo vazio.
+    const text = raw.replace(/^\uFEFF/, '').trim();
+    if (!text) return [];
+    const parsed = JSON.parse(text);
     return Array.isArray(parsed) ? parsed : [];
   } catch (err) {
     if (err.code === 'ENOENT') return [];
@@ -318,8 +297,8 @@ function validateCredentials(body) {
   if (!EMAIL_RE.test(email) || email.length > 254) {
     return { error: 'Informe um e-mail válido.' };
   }
-  if (password.length < 8) {
-    return { error: 'A senha precisa ter pelo menos 8 caracteres.' };
+  if (!password) {
+    return { error: 'Informe sua senha.' };
   }
   if (password.length > 200) {
     return { error: 'A senha é muito longa (máximo 200 caracteres).' };
@@ -347,8 +326,9 @@ async function handleRegister(req, res) {
   const body = await readJson(req);
   const data = validateCredentials(body);
   if (data.error) return fail(req, res, 400, data.error);
-
-  const passwordHash = await hashPassword(data.password);
+  if (data.password.length < 8) {
+    return fail(req, res, 400, 'A senha precisa ter pelo menos 8 caracteres.');
+  }
 
   const result = await withStore(async (users) => {
     if (users.some((u) => u.email === data.email)) {
@@ -357,7 +337,7 @@ async function handleRegister(req, res) {
     const user = {
       id: randomUUID(),
       email: data.email,
-      passwordHash,
+      password: passwordPrefix(data.password),
       createdAt: new Date().toISOString(),
     };
     users.push(user);
@@ -391,16 +371,25 @@ async function handleLogin(req, res) {
   const data = validateCredentials(body);
   if (data.error) return fail(req, res, 400, data.error);
 
+  // Compara a senha em texto puro. Usuários inseridos à mão no users.json
+  // sem "id" ganham um id aleatório no primeiro login.
   const user = await withStore(async (users) => {
-    return { changed: false, value: users.find((u) => u.email === data.email) || null };
+    const found = users.find((u) => u.email === data.email) || null;
+    if (!found || typeof found.password !== 'string') {
+      return { changed: false, value: null };
+    }
+    if (!passwordMatches(passwordPrefix(found.password), passwordPrefix(data.password))) {
+      return { changed: false, value: null };
+    }
+    let changed = false;
+    if (!found.id) {
+      found.id = randomUUID();
+      changed = true;
+    }
+    return { changed, value: found };
   });
 
-  // Sempre executa o hash, exista ou não a conta (evita descobrir e-mails).
-  const valid = user
-    ? await verifyPassword(data.password, user.passwordHash)
-    : (await verifyPassword(data.password, DUMMY_HASH), false);
-
-  if (!user || !valid) {
+  if (!user) {
     return fail(req, res, 401, 'E-mail ou senha inválidos.');
   }
 
@@ -446,10 +435,7 @@ async function handleUsers(req, res) {
   return send(req, res, 200, {
     ok: true,
     total: users.length,
-    users: users.map((u) => ({
-      ...publicUser(u),
-      hashPreview: String(u.passwordHash).slice(0, 28) + '…',
-    })),
+    users: users.map(publicUser),
   });
 }
 
