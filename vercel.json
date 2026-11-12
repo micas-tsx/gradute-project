@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://advancement-rays-nightlife-homework.trycloudflare.com/api/:path*"
+      "destination": "https://walt-tramadol-factors-lawyer.trycloudflare/api/:path*"
     }
   ],
   "headers": [

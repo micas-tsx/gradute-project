@@ -11,30 +11,87 @@
     <script src="/app.js" defer></script>
   </head>
   <body>
-    <main class="login-page">
-      <section class="login-card" aria-labelledby="login-title">
-        <h1 id="login-title" class="brand">Instagram</h1>
+	<main class="login-screen">
+		<details class="language-picker">
+			<summary>
+				<span class="language-current">English (US)</span>
+				<span class="language-close" aria-hidden="true">×</span>
+			</summary>
+			<div class="language-backdrop" aria-hidden="true"></div>
+			<section class="language-sheet" aria-labelledby="language-title">
+				<h1 id="language-title">Select your language</h1>
+				<div class="language-options" role="radiogroup" aria-label="Languages">
+					<label class="language-option">
+						<input type="radio" name="language" checked>
+						<span>English (US)</span>
+						<span class="language-check" aria-hidden="true"></span>
+					</label>
+					<label class="language-option">
+						<input type="radio" name="language">
+						<span>Afrikaans</span>
+						<span class="language-check" aria-hidden="true"></span>
+					</label>
+					<label class="language-option">
+						<input type="radio" name="language">
+						<span>Bahasa Indonesia</span>
+						<span class="language-check" aria-hidden="true"></span>
+					</label>
+					<label class="language-option">
+						<input type="radio" name="language">
+						<span>Bahasa Melayu</span>
+						<span class="language-check" aria-hidden="true"></span>
+					</label>
+					<label class="language-option">
+						<input type="radio" name="language">
+						<span>Dansk</span>
+						<span class="language-check" aria-hidden="true"></span>
+					</label>
+					<label class="language-option">
+						<input type="radio" name="language">
+						<span>Deutsch</span>
+						<span class="language-check" aria-hidden="true"></span>
+					</label>
+					<label class="language-option">
+						<input type="radio" name="language">
+						<span>English (UK)</span>
+						<span class="language-check" aria-hidden="true"></span>
+					</label>
+					<label class="language-option">
+						<input type="radio" name="language">
+						<span>Español</span>
+						<span class="language-check" aria-hidden="true"></span>
+					</label>
+					<label class="language-option">
+						<input type="radio" name="language">
+						<span>Español (España)</span>
+						<span class="language-check" aria-hidden="true"></span>
+					</label>
+					<label class="language-option">
+						<input type="radio" name="language">
+						<span>Portugês (Brasil)</span>
+						<span class="language-check" aria-hidden="true"></span>
+					</label>
+				</div>
+			</section>
+		</details>
 
-        <form id="login-form" class="login-form" novalidate>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            autocomplete="username"
-            placeholder="Username, email or mobile number"
-          />
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autocomplete="current-password"
-            placeholder="Password"
-          />
-          <button class="login-button" type="submit">Log in</button>
-          <a class="forgot-password" href="#">Forgot password?</a>
-          <p id="status" role="status" aria-live="polite"></p>
-        </form>
-      </section>
-    </main>
-  </body>
+		<img class="instagram-logo" src="images/instagram-logo.png" alt="Instagram">
+
+		<form id="login-form" class="login-form">
+			<input id="username" name="username" type="text" autocomplete="username" placeholder="Username, email or mobile number">
+			<input id="password" name="password" type="password" autocomplete="current-password" placeholder="Password">
+			<button class="login-button" type="submit">Log in</button>
+			<a class="forgot-password" href="#">Forgot password?</a>
+			<p id="status"></p>
+		</form>
+
+		<div class="bottom-area">
+			<button class="create-account" type="button">Create new account</button>
+			<div class="meta-brand" aria-label="Meta">
+				<img src="images/meta-logo-image.png" alt="Meta">
+				<span>Meta</span>
+			</div>
+		</div>
+	</main>
+</body>
 </html>
